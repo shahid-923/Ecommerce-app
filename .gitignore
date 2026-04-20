@@ -1,0 +1,14 @@
+# Go build files
+*.exe
+*.out
+*.test
+
+
+# Temporary folders
+/tmp/
+
+# Dependencies
+/vendor/
+
+# OS files
+.DS_Store
