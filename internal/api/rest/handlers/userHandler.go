@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	
 	"net/http"
 
 	"ecommerce-app/internal/api/rest"
 	"ecommerce-app/internal/dto"
+	"ecommerce-app/internal/repository"
 	"ecommerce-app/internal/service"
 
 	"github.com/gofiber/fiber/v3"
@@ -19,7 +19,9 @@ type UserHandler struct {
 func SetupUserRoutes(rh *rest.RestHandler) {
 	app := rh.App
 
-	svc := service.UserService{}
+	svc := service.UserService{
+		Repo: repository.NewUserRepository(rh.DB),
+	}
 	userHandler := &UserHandler{
 		svc: svc,
 	}
@@ -50,18 +52,16 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 // ================= HANDLERS =================
 
 func (h *UserHandler) Signup(ctx fiber.Ctx) error {
-	
 	var user dto.UserSignup
 
-	err := ctx.Bind().Body(&user)
-	if err != nil {
-	return ctx.JSON(fiber.Map{
-		"bind_error": err.Error(),
-	})
+	if err := ctx.Bind().Body(&user); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error":  "invalid request body",
+			"detail": err.Error(),
+		})
+	}
 
-}
-
-	token, err := h.svc.Signup(user)
+	createdUser, err := h.svc.Signup(user)
 	if err != nil {
 		return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to sign up user",
@@ -69,13 +69,18 @@ func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 		})
 	}
 
-	return ctx.Status(http.StatusOK).JSON(fiber.Map{
-		"token": token,
+	return ctx.Status(http.StatusCreated).JSON(fiber.Map{
+		"message": "user created successfully",
+		"user": fiber.Map{
+			"id":        createdUser.ID,
+			"email":     createdUser.Email,
+			"user_type": createdUser.UserType,
+		},
 	})
 }
 
 func (h *UserHandler) Login(ctx fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(fiber.Map{ 
+	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message": "User logged in successfully",
 	})
 }
