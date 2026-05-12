@@ -6,7 +6,7 @@ import (
 	"ecommerce-app/internal/repository"
 )
 
-type UserService struct {
+type UserService struct {                       //for business logic 
 	Repo repository.UserRepository
 }
 
@@ -20,10 +20,11 @@ func (s UserService) Signup(input dto.UserSignup) (domain.User, error) {
 		Password: input.Password,
 		Phone:    input.Phone,
 	})
+
 	if err != nil {
 		return domain.User{}, err
 	}
-
+   
 	return user, nil
 }
 
