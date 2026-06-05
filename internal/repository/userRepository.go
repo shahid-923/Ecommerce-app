@@ -16,14 +16,14 @@ type UserRepository interface {
 	UpdateUser(id uint, user domain.User) (domain.User, error)
 }
 
+type userRepository struct {
+	db *gorm.DB
+}
+
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{
 		db: db,
 	}
-}
-
-type userRepository struct {
-	db *gorm.DB
 }
 
 func (r userRepository) CreateUser(user domain.User) (domain.User, error) {
