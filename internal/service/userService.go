@@ -1,17 +1,14 @@
 package service
 
 import (
+	"errors"
 	"ecommerce-app/internal/domain"
 	"ecommerce-app/internal/dto"
 	"ecommerce-app/internal/repository"
 )
 
 type UserService struct { 
-	Repo repository.UserRepository //for business logic
-}
-
-func (s UserService) findUserByEmail(email string) (*domain.User, error) {
-	return nil, nil
+	Repo repository.UserRepository           //for business logic
 }
 
 func (s UserService) Signup(input dto.UserSignup) (domain.User, error) {
@@ -28,10 +25,18 @@ func (s UserService) Signup(input dto.UserSignup) (domain.User, error) {
 	return user, nil
 }
 
-func (s UserService) Login(input any) (string, error) {
-	return "", nil
+func (s UserService) Login(email string,password string) (string, error) {
+    user, err := s.findUserByEmail(email)
+	if err != nil{
+	return " ", errors.New("user doesn't exists")
+	}
+	return user.Email, nil
 }
 
+func (s UserService) findUserByEmail(email string) (*domain.User, error) {
+	user,err := s.Repo.FindUser(email) 
+	return &user, err
+}
 func (s UserService) GetVerificationCode(e domain.User) (int, error) {
 	return 0, nil
 }
