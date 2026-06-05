@@ -25,13 +25,15 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 	userHandler := &UserHandler{
 		svc: svc,
 	}
-
+    
 	api := app.Group("/api")
 	user := api.Group("/users")
 
-	user.Post("/signup", userHandler.Signup)
-	user.Post("/login", userHandler.Login)
+	// public endpoints
+	user.Post("/signup", userHandler.Signup)     
+	user.Post("/login", userHandler.Login)   
 
+    // private endpoints
 	user.Get("/verify", userHandler.GetVerificationCode)
 	user.Post("/verify", userHandler.VerifyCode)
 
@@ -80,9 +82,26 @@ func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 }
 
 func (h *UserHandler) Login(ctx fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "User logged in successfully",
-	})
+    var loginInput dto.UserLogin
+
+    if err := ctx.Bind().Body(&loginInput); err != nil {
+        return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
+            "message": "please provide valid inputs",
+            "error":   err.Error(),
+        })
+    }
+
+    token, err := h.svc.Login(loginInput.Email, loginInput.Password)
+    if err != nil {
+        return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{
+            "message": "invalid email or password",
+        })
+    }
+
+    return ctx.Status(http.StatusOK).JSON(fiber.Map{
+        "message": "User logged in successfully",
+        "token":   token,
+    })
 }
 
 func (h *UserHandler) GetVerificationCode(ctx fiber.Ctx) error {
