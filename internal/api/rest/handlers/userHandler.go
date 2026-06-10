@@ -21,9 +21,11 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 
 	svc := service.UserService{
 		Repo: repository.NewUserRepository(rh.DB),
+	    Auth: rh.Auth,
 	}
 	userHandler := &UserHandler{
 		svc: svc,
+
 	}
     
 	api := app.Group("/api")
@@ -56,7 +58,7 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 	var user dto.UserSignup
 
-	if err := ctx.Bind().Body(&user); err != nil {
+	if err := ctx.Bind().JSON(&user); err != nil {
 		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
 			"error":  "invalid request body",
 			"detail": err.Error(),
@@ -82,28 +84,27 @@ func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 }
 
 func (h *UserHandler) Login(ctx fiber.Ctx) error {
-    var loginInput dto.UserLogin
+	var loginInput dto.UserLogin
 
-    if err := ctx.Bind().Body(&loginInput); err != nil {
-        return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
-            "message": "please provide valid inputs",
-            "error":   err.Error(),
-        })
-    }
+	if err := ctx.Bind().JSON(&loginInput); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"message": "please provide valid inputs",
+			"error":   err.Error(),
+		})
+	}
 
-    token, err := h.svc.Login(loginInput.Email, loginInput.Password)
-    if err != nil {
-        return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{
-            "message": "invalid email or password",
-        })
-    }
+	token, err := h.svc.Login(loginInput.Email, loginInput.Password)
+	if err != nil {
+		return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"message": "invalid email or password",
+		})
+	}
 
-    return ctx.Status(http.StatusOK).JSON(fiber.Map{
-        "message": "User logged in successfully",
-        "token":   token,
-    })
-}
-
+	return ctx.Status(http.StatusOK).JSON(fiber.Map{
+		"message": "User logged in successfully",
+		"token":   token,
+	})
+} 
 func (h *UserHandler) GetVerificationCode(ctx fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message": "Verification code fetched",

@@ -7,6 +7,7 @@ import (
 	"ecommerce-app/internal/api/rest"
 	"ecommerce-app/internal/api/rest/handlers"
 	"ecommerce-app/internal/domain"
+	"ecommerce-app/internal/helper"
 
 	"github.com/gofiber/fiber/v3"
 	"gorm.io/driver/postgres"
@@ -25,14 +26,16 @@ func StartServer(config config.AppConfig) {
 	}
     
 	log.Println("Database connected successfully")
-
-
+	
 	//run the migration
 	db.AutoMigrate(&domain.User{})
+
+	auth := helper.SetupAuth(config.AppSecret)
 
 	rh := &rest.RestHandler{
 		App: app,
 		DB: db,
+		Auth: auth,
 	}
 
 	setupRoutes(rh)
