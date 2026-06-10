@@ -12,30 +12,30 @@ import (
 )
 
 type UserHandler struct {
-	svc service.UserService
+	svc *service.UserService
 }
 
 // SetupUserRoutes registers all user-related routes
 func SetupUserRoutes(rh *rest.RestHandler) {
 	app := rh.App
 
-	svc := service.UserService{
+	svc := &service.UserService{
 		Repo: repository.NewUserRepository(rh.DB),
-	    Auth: rh.Auth,
+		Auth: rh.Auth,
 	}
+
 	userHandler := &UserHandler{
 		svc: svc,
-
 	}
-    
+
 	api := app.Group("/api")
 	user := api.Group("/users")
 
 	// public endpoints
-	user.Post("/signup", userHandler.Signup)     
-	user.Post("/login", userHandler.Login)   
+	user.Post("/signup", userHandler.Signup)
+	user.Post("/login", userHandler.Login)
 
-    // private endpoints
+	// protected endpoints (you will later add middleware)
 	user.Get("/verify", userHandler.GetVerificationCode)
 	user.Post("/verify", userHandler.VerifyCode)
 
@@ -53,58 +53,56 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 	user.Post("/seller", userHandler.BecomeSeller)
 }
 
-// ================= HANDLERS =================
+// ================= SIGNUP =================
 
+
+// ================= SIGNUP =================
 func (h *UserHandler) Signup(ctx fiber.Ctx) error {
-	var user dto.UserSignup
+	var input dto.UserSignup
 
-	if err := ctx.Bind().JSON(&user); err != nil {
+	if err := ctx.Bind().JSON(&input); err != nil {
 		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"error":  "invalid request body",
-			"detail": err.Error(),
+			"message": "invalid request",
+			"error":   err.Error(),
 		})
 	}
 
-	createdUser, err := h.svc.Signup(user)
+	_, token, err := h.svc.Signup(input)
 	if err != nil {
 		return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Failed to sign up user",
+			"message": "failed to create user",
 			"error":   err.Error(),
 		})
 	}
 
 	return ctx.Status(http.StatusCreated).JSON(fiber.Map{
-		"message": "user created successfully",
-		"user": fiber.Map{
-			"id":        createdUser.ID,
-			"email":     createdUser.Email,
-			"user_type": createdUser.UserType,
-		},
+		"message": token,
 	})
 }
 
-func (h *UserHandler) Login(ctx fiber.Ctx) error {
-	var loginInput dto.UserLogin
+// ================= LOGIN =================
 
-	if err := ctx.Bind().JSON(&loginInput); err != nil {
+func (h *UserHandler) Login(ctx fiber.Ctx) error {
+	var input dto.UserLogin
+
+	if err := ctx.Bind().JSON(&input); err != nil {
 		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
-			"message": "please provide valid inputs",
+			"message": "invalid request",
 			"error":   err.Error(),
 		})
 	}
 
-	token, err := h.svc.Login(loginInput.Email, loginInput.Password)
+	token, err := h.svc.Login(input.Email, input.Password)
 	if err != nil {
 		return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{
-			"message": "invalid email or password",
+			"message": "invalid credentials",
 		})
 	}
 
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "User logged in successfully",
-		"token":   token,
+		"message": token,
 	})
-} 
+}
 func (h *UserHandler) GetVerificationCode(ctx fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message": "Verification code fetched",

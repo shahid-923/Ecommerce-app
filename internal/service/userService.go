@@ -9,16 +9,15 @@ import (
 )
 
 type UserService struct {
-	Repo repository.UserRepository //for business logic
+	Repo repository.UserRepository
 	Auth helper.Auth
 }
 
-func (s UserService) Signup(input dto.UserSignup) (domain.User, error) {
+func (s *UserService) Signup(input dto.UserSignup) (domain.User, string, error) {
 
 	hashedPassword, err := s.Auth.CreateHashedPassword(input.Password)
-
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, "", err
 	}
 
 	user, err := s.Repo.CreateUser(domain.User{
@@ -26,35 +25,40 @@ func (s UserService) Signup(input dto.UserSignup) (domain.User, error) {
 		Password: hashedPassword,
 		Phone:    input.Phone,
 	})
-
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, "", err
 	}
 
-	return user, nil
+	token, err := s.Auth.GenerateToken(user.ID, user.Email, user.UserType)
+	if err != nil {
+		return domain.User{}, "", err
+	}
+
+	return user, token, nil
 }
 
-func (s UserService) Login(email string, password string) (string, error) {
+func (s *UserService) Login(email string, password string) (string, error) {
 
-	user, err := s.findUserByEmail(email)
+	user, err := s.Repo.FindUser(email)
 	if err != nil {
-		return " ", errors.New("user doesn't exists")
+		return "", errors.New("user does not exist")
 	}
 
 	err = s.Auth.VerifyPassword(password, user.Password)
-
 	if err != nil {
 		return "", err
 	}
 
-	// generate token
 	return s.Auth.GenerateToken(user.ID, user.Email, user.UserType)
 }
-
-func (s UserService) findUserByEmail(email string) (*domain.User, error) {
+ func (s *UserService) findUserByEmail(email string) (*domain.User, error) {
 	user, err := s.Repo.FindUser(email)
-	return &user, err
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
+
 func (s UserService) GetVerificationCode(e domain.User) (int, error) {
 	return 0, nil
 }

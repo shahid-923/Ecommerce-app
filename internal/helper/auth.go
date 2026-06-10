@@ -123,26 +123,28 @@ func (a Auth) VerifyToken(t string) (domain.User, error) {
 	return domain.User{}, errors.New("token verification failed")
 }
 
-func (a Auth) Authorize(ctx fiber.Ctx) error {
+func (a Auth) Authorize() fiber.Handler {
+	return func(ctx fiber.Ctx) error {
 
-	authHeader := ctx.Get("Authorization")
-	if authHeader == "" {
-		return ctx.Status(401).JSON(fiber.Map{
-			"message": "authorization failed",
-			"reason":  "authorization header is missing",
-		})
-	}
+		authHeader := ctx.Get("Authorization")
+		if authHeader == "" {
+			return ctx.Status(401).JSON(fiber.Map{
+				"message": "authorization failed",
+				"reason":  "authorization header is missing",
+			})
+		}
 
-	user, err := a.VerifyToken(authHeader)
-	if err == nil && user.ID > 0 {
+		user, err := a.VerifyToken(authHeader)
+		if err != nil || user.ID == 0 {
+			return ctx.Status(401).JSON(fiber.Map{
+				"message": "authorization failed",
+				"reason":  err.Error(),
+			})
+		}
+
 		ctx.Locals("user", user)
 		return ctx.Next()
 	}
-
-	return ctx.Status(401).JSON(fiber.Map{
-		"message": "authorization failed",
-		"reason":  err,
-	})
 }
 
 func (a Auth) GetCurrentUser(ctx fiber.Ctx) (domain.User, error) {
