@@ -28,35 +28,34 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 		svc: svc,
 	}
 
-	api := app.Group("/api")
-	user := api.Group("/users")
+	// ================= PUBLIC ROUTES =================
 
-	// public endpoints
-	user.Post("/signup", userHandler.Signup)
-	user.Post("/login", userHandler.Login)
+	app.Post("/signup", userHandler.Signup)
+	app.Post("/login", userHandler.Login)
 
-	// protected endpoints (you will later add middleware)
-	user.Get("/verify", userHandler.GetVerificationCode)
-	user.Post("/verify", userHandler.VerifyCode)
+	// ================= PROTECTED ROUTES =================
 
-	user.Post("/profile", userHandler.CreateProfile)
-	user.Get("/profile/:id", userHandler.GetProfile)
-	user.Put("/profile/:id", userHandler.UpdateProfile)
+	protected := app.Group("/")
+	protected.Use(rh.Auth.Authorize())
 
-	user.Get("/cart", userHandler.FindCart)
-	user.Post("/cart", userHandler.CreateCart)
+	protected.Get("/verify", userHandler.GetVerificationCode)
+	protected.Post("/verify", userHandler.VerifyCode)
 
-	user.Post("/orders", userHandler.CreateOrder)
-	user.Get("/orders", userHandler.GetOrders)
-	user.Get("/orders/:id", userHandler.GetOrderById)
+	protected.Post("/profile", userHandler.CreateProfile)
+	protected.Get("/profile/:id", userHandler.GetProfile)
+	protected.Put("/profile/:id", userHandler.UpdateProfile)
 
-	user.Post("/seller", userHandler.BecomeSeller)
+	protected.Get("/cart", userHandler.FindCart)
+	protected.Post("/cart", userHandler.CreateCart)
+
+	protected.Post("/orders", userHandler.CreateOrder)
+	protected.Get("/orders", userHandler.GetOrders)
+	protected.Get("/orders/:id", userHandler.GetOrderById)
+
+	protected.Post("/seller", userHandler.BecomeSeller)
 }
-
 // ================= SIGNUP =================
 
-
-// ================= SIGNUP =================
 func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 	var input dto.UserSignup
 
