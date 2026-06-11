@@ -75,7 +75,8 @@ func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 	}
 
 	return ctx.Status(http.StatusCreated).JSON(fiber.Map{
-		"message": token,
+		"message": "user created successfully",
+		"token":   token,
 	})
 }
 
@@ -99,7 +100,8 @@ func (h *UserHandler) Login(ctx fiber.Ctx) error {
 	}
 
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
-		"message": token,
+		"message": "login successful",
+		"token":   token,
 	})
 }
 func (h *UserHandler) GetVerificationCode(ctx fiber.Ctx) error {
