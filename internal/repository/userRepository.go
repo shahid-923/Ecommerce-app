@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type UserRepository interface {
@@ -21,24 +20,23 @@ type userRepository struct {
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepository{
-		db: db,
-	}
+	return &userRepository{db: db}
 }
 
-func (r userRepository) CreateUser(user domain.User) (domain.User, error) {
-	err := r.db.Create(&user).Error
+// ================= CREATE USER =================
 
+func (r *userRepository) CreateUser(user domain.User) (domain.User, error) {
+	err := r.db.Create(&user).Error
 	if err != nil {
 		log.Printf("error creating user: %v\n", err)
 		return domain.User{}, errors.New("failed to create user")
 	}
-
 	return user, nil
 }
 
-func (r userRepository) FindUser(email string) (domain.User, error) {
+// ================= FIND USER BY EMAIL =================
 
+func (r *userRepository) FindUser(email string) (domain.User, error) {
 	var user domain.User
 
 	err := r.db.First(&user, "email = ?", email).Error
@@ -46,29 +44,37 @@ func (r userRepository) FindUser(email string) (domain.User, error) {
 		log.Printf("error finding user: %v\n", err)
 		return domain.User{}, errors.New("user doesn't exist")
 	}
+
 	return user, nil
 }
 
-func (r userRepository) FindUserByID(id uint) (domain.User, error) {
+// ================= FIND USER BY ID =================
+
+func (r *userRepository) FindUserByID(id uint) (domain.User, error) {
 	var user domain.User
 
-	err := r.db.First(&user, id).Error
+	err := r.db.First(&user, "id = ?", id).Error
 	if err != nil {
-		log.Printf("error finding user: %v\n", err)
-		return domain.User{}, errors.New("user doesn't exist")
+		return domain.User{}, err
 	}
+
 	return user, nil
 }
 
-func (r userRepository) UpdateUser(id uint, user domain.User) (domain.User, error) {
-	var existingUser domain.User
+// ================= UPDATE USER =================
 
-	err := r.db.Model(&existingUser).Clauses(clause.Returning{}).Where("id = ?", id).Updates(user).Error
+func (r *userRepository) UpdateUser(id uint, user domain.User) (domain.User, error) {
+	var updated domain.User
+
+	err := r.db.Model(&domain.User{}).
+		Where("id = ?", id).
+		Updates(user).
+		First(&updated).Error
 
 	if err != nil {
 		log.Printf("error updating user: %v\n", err)
 		return domain.User{}, errors.New("failed to update user")
 	}
 
-	return existingUser, nil
+	return updated, nil
 }

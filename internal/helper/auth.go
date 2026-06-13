@@ -150,5 +150,14 @@ func (a Auth) Authorize() fiber.Handler {
 func (a Auth) GetCurrentUser(ctx fiber.Ctx) (domain.User, error) {
 
 	user := ctx.Locals("user")
-	return user.(domain.User), nil
+	if user == nil {
+		return domain.User{}, errors.New("user not found in context")
+	}
+
+	u, ok := user.(domain.User)
+	if !ok {
+		return domain.User{}, errors.New("invalid user type")
+	}
+
+	return u, nil
 }

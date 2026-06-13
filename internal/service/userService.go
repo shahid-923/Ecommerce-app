@@ -51,6 +51,15 @@ func (s *UserService) Login(email string, password string) (string, error) {
 
 	return s.Auth.GenerateToken(user.ID, user.Email, user.UserType)
 }
+// func (s UserService) GetProfile(id uint) (*domain.User, error) {
+
+// 	user, err := s.Repo.FindUserById(id)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return &user, nil
+// }
  func (s *UserService) findUserByEmail(email string) (*domain.User, error) {
 	user, err := s.Repo.FindUser(email)
 	if err != nil {
@@ -59,6 +68,10 @@ func (s *UserService) Login(email string, password string) (string, error) {
 	return &user, nil
 }
 
+
+func (s *UserService) GetUserByID(id uint) (domain.User, error) {
+	return s.Repo.FindUserByID(id)
+}
 func (s UserService) GetVerificationCode(e domain.User) (int, error) {
 	return 0, nil
 }
@@ -70,9 +83,7 @@ func (s UserService) VerifyCode(id uint, code int) (string, error) {
 func (s UserService) CreateProfile(id uint, input any) error {
 	return nil
 }
-func (s UserService) GetProfile(id uint) (*domain.User, error) {
-	return nil, nil
-}
+
 func (s UserService) UpdateProfile(id uint, input any) error {
 	return nil
 }
