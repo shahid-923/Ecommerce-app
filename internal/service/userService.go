@@ -13,7 +13,7 @@ type UserService struct {
 	Auth helper.Auth
 }
 
-func (s *UserService) Signup(input dto.UserSignup) (domain.User, string, error) {
+func (s *UserService) Register(input dto.UserSignup) (domain.User, string, error) {
 	hashedPassword, err := s.Auth.CreateHashedPassword(input.Password)
 	if err != nil {
 		return domain.User{}, "", err

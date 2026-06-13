@@ -28,21 +28,24 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 	}
 
 	pubRoutes := app.Group("/users")
-	pubRoutes.Post("/signup", userHandler.Signup)
+	pubRoutes.Post("/register", userHandler.Register)
 	pubRoutes.Post("/login", userHandler.Login)
 
 	pvtRoutes := pubRoutes.Group("/", rh.Auth.Authorize())
-	pvtRoutes.Get("/profile", userHandler.GetProfile)   // <-- added
-	pvtRoutes.Post("/verify", userHandler.VerifyCode)
-	pvtRoutes.Get("/cart", userHandler.FindCart)
-	pvtRoutes.Post("/cart", userHandler.CreateCart)
-	pvtRoutes.Post("/orders", userHandler.CreateOrder)
-	pvtRoutes.Get("/orders", userHandler.GetOrders)
-	pvtRoutes.Get("/orders/:id", userHandler.GetOrderById)
+
+	pvtRoutes.Get("/verify", userHandler.GetVerificationCode)
+	pvtRoutes.Post("/verify", userHandler.Verify)
+	pvtRoutes.Post("/profile", userHandler.CreateProfile)
+	pvtRoutes.Get("/profile", userHandler.GetProfile)
+
+	pvtRoutes.Post("/cart", userHandler.AddToCart)
+	pvtRoutes.Get("/cart", userHandler.GetCart)
+	pvtRoutes.Get("/order", userHandler.GetOrders)
+	pvtRoutes.Get("/order/:id", userHandler.GetOrder)
 	pvtRoutes.Post("/seller", userHandler.BecomeSeller)
 }
 
-func (h *UserHandler) Signup(ctx fiber.Ctx) error {
+func (h *UserHandler) Register(ctx fiber.Ctx) error {
 	var input dto.UserSignup
 
 	if err := ctx.Bind().JSON(&input); err != nil {
@@ -52,7 +55,7 @@ func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 		})
 	}
 
-	_, token, err := h.svc.Signup(input)
+	_, token, err := h.svc.Register(input)
 	if err != nil {
 		return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{
 			"message": "failed to create user",
@@ -107,33 +110,33 @@ func (h *UserHandler) GetProfile(ctx fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(profile)
 }
 
-func (h *UserHandler) VerifyCode(ctx fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Verification code verified",
-	})
-}
-
 func (h *UserHandler) CreateProfile(ctx fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message": "Profile created",
 	})
 }
 
-func (h *UserHandler) FindCart(ctx fiber.Ctx) error {
+func (h *UserHandler) Verify(ctx fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Cart fetched",
+		"message": "Verification code verified",
 	})
 }
 
-func (h *UserHandler) CreateCart(ctx fiber.Ctx) error {
+func (h *UserHandler) GetVerificationCode(ctx fiber.Ctx) error {
+	return ctx.Status(http.StatusOK).JSON(fiber.Map{
+		"message": "Verification code sent",
+	})
+}
+
+func (h *UserHandler) AddToCart(ctx fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message": "Item added to cart",
 	})
 }
 
-func (h *UserHandler) CreateOrder(ctx fiber.Ctx) error {
+func (h *UserHandler) GetCart(ctx fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Order created",
+		"message": "Cart fetched",
 	})
 }
 
@@ -143,7 +146,7 @@ func (h *UserHandler) GetOrders(ctx fiber.Ctx) error {
 	})
 }
 
-func (h *UserHandler) GetOrderById(ctx fiber.Ctx) error {
+func (h *UserHandler) GetOrder(ctx fiber.Ctx) error {
 	id := ctx.Params("id")
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message":  "Order fetched",
@@ -156,4 +159,3 @@ func (h *UserHandler) BecomeSeller(ctx fiber.Ctx) error {
 		"message": "Seller application submitted",
 	})
 }
-// further code here 
