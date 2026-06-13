@@ -156,4 +156,4 @@ func (h *UserHandler) BecomeSeller(ctx fiber.Ctx) error {
 		"message": "Seller application submitted",
 	})
 }
-//
+// further code here 
