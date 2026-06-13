@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"net/http"
-     
+
 	"ecommerce-app/internal/api/rest"
 	"ecommerce-app/internal/dto"
 	"ecommerce-app/internal/repository"
@@ -15,7 +15,6 @@ type UserHandler struct {
 	svc *service.UserService
 }
 
-// SetupUserRoutes registers all user-related routes
 func SetupUserRoutes(rh *rest.RestHandler) {
 	app := rh.App
 
@@ -29,29 +28,19 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 	}
 
 	pubRoutes := app.Group("/users")
-
 	pubRoutes.Post("/signup", userHandler.Signup)
 	pubRoutes.Post("/login", userHandler.Login)
 
-	// protected routes
 	pvtRoutes := pubRoutes.Group("/", rh.Auth.Authorize())
-
-	// VERIFY
+	pvtRoutes.Get("/profile", userHandler.GetProfile)   // <-- added
 	pvtRoutes.Post("/verify", userHandler.VerifyCode)
-
-	// CART
 	pvtRoutes.Get("/cart", userHandler.FindCart)
 	pvtRoutes.Post("/cart", userHandler.CreateCart)
-
-	// ORDERS
 	pvtRoutes.Post("/orders", userHandler.CreateOrder)
 	pvtRoutes.Get("/orders", userHandler.GetOrders)
 	pvtRoutes.Get("/orders/:id", userHandler.GetOrderById)
-
-	// SELLER
 	pvtRoutes.Post("/seller", userHandler.BecomeSeller)
 }
-// ================= SIGNUP =================
 
 func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 	var input dto.UserSignup
@@ -77,8 +66,6 @@ func (h *UserHandler) Signup(ctx fiber.Ctx) error {
 	})
 }
 
-// ================= LOGIN =================
-
 func (h *UserHandler) Login(ctx fiber.Ctx) error {
 	var input dto.UserLogin
 
@@ -101,10 +88,23 @@ func (h *UserHandler) Login(ctx fiber.Ctx) error {
 		"token":   token,
 	})
 }
+
 func (h *UserHandler) GetProfile(ctx fiber.Ctx) error {
-    return ctx.JSON(fiber.Map{
-        "working": true,
-    })
+	user, err := h.svc.Auth.GetCurrentUser(ctx)
+	if err != nil {
+		return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": err.Error(),
+		})
+	}
+
+	profile, err := h.svc.GetProfile(user.ID)
+	if err != nil {
+		return ctx.Status(http.StatusNotFound).JSON(fiber.Map{
+			"error": "user not found",
+		})
+	}
+
+	return ctx.Status(http.StatusOK).JSON(profile)
 }
 
 func (h *UserHandler) VerifyCode(ctx fiber.Ctx) error {
@@ -118,7 +118,6 @@ func (h *UserHandler) CreateProfile(ctx fiber.Ctx) error {
 		"message": "Profile created",
 	})
 }
-
 
 func (h *UserHandler) FindCart(ctx fiber.Ctx) error {
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
@@ -146,7 +145,6 @@ func (h *UserHandler) GetOrders(ctx fiber.Ctx) error {
 
 func (h *UserHandler) GetOrderById(ctx fiber.Ctx) error {
 	id := ctx.Params("id")
-
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message":  "Order fetched",
 		"order_id": id,
