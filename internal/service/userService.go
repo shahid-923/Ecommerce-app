@@ -6,6 +6,8 @@ import (
 	"ecommerce-app/internal/helper"
 	"ecommerce-app/internal/repository"
 	"errors"
+	"time"
+	"log"
 )
 
 type UserService struct {
@@ -58,12 +60,73 @@ func (s *UserService) GetUserByID(id uint) (domain.User, error) {
 	return s.Repo.FindUserByID(id)
 }
 
+func (s *UserService) isVerifiedUser(id uint) (bool) {
+
+	currentUser, err := s.Repo.FindUserByID(id)
+	return err == nil && currentUser.Verified     // if true else return false
+    
+}
 func (s *UserService) GetVerificationCode(e domain.User) (int, error) {
-	return 0, nil
+	
+	// if user already verified
+	if s.isVerifiedUser(e.ID) {
+    return 0, errors.New("user already verified")
+    }
+
+	// generate verification code 
+    code, err := s.Auth.GenerateCode()
+	if err != nil{
+		return 0, err
+	}
+
+	// update user 
+	user := domain.User{
+	  Expiry: time.Now().Add(30 * time.Minute),	
+	  Code: code,
+	}
+    
+	_, err = s.Repo.UpdateUser(e.ID, user)
+	if err != nil{
+	  return 0, errors.New("failed to update user")	
+	}
+    // send the sms to user phone number
+
+
+	// return the verification code
+	return code, nil	
 }
 
-func (s *UserService) VerifyCode(id uint, code int) (string, error) {
-	return "", nil
+func (s *UserService) VerifyCode(id uint, code int) error {
+	if s.isVerifiedUser(id) {
+		return errors.New("user already verified")
+	}
+
+	user, err := s.Repo.FindUserByID(id)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("DB code: %d, Input code: %d", user.Code, code)
+	log.Printf("Expiry: %v, Now: %v", user.Expiry, time.Now())
+
+	if user.Code != code {
+		return errors.New("invalid verification code")
+	}
+
+	if !time.Now().Before(user.Expiry) {
+		return errors.New("verification code expired")
+	}
+
+	updatedUser := domain.User{
+		Verified: true,
+	}
+
+	_, err = s.Repo.UpdateUser(id, updatedUser)
+	if err != nil {
+		return errors.New("unable to update user")
+	}
+
+	return nil
 }
 
 func (s *UserService) CreateProfile(id uint, input any) error {

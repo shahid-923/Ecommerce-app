@@ -33,8 +33,8 @@ func SetupUserRoutes(rh *rest.RestHandler) {
 
 	pvtRoutes := pubRoutes.Group("/", rh.Auth.Authorize())
 
-	pvtRoutes.Get("/verify", userHandler.GetVerificationCode)
-	pvtRoutes.Post("/verify", userHandler.Verify)
+	pvtRoutes.Get("/verify", userHandler.GetVerificationCode)  // generates code
+    pvtRoutes.Post("/verify", userHandler.Verify)              // verifies code
 	pvtRoutes.Post("/profile", userHandler.CreateProfile)
 	pvtRoutes.Get("/profile", userHandler.GetProfile)
 
@@ -117,14 +117,54 @@ func (h *UserHandler) CreateProfile(ctx fiber.Ctx) error {
 }
 
 func (h *UserHandler) Verify(ctx fiber.Ctx) error {
-	return ctx.Status(http.StatusOK).JSON(fiber.Map{
-		"message": "Verification code verified",
-	})
+
+	user, err := h.svc.Auth.GetCurrentUser(ctx)
+	if err != nil {
+		return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	var req dto.VerificationCodeInput
+	if err := ctx.Bind().JSON(&req); err != nil {
+		return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"message": "please provide a valid input",
+		})
+	}
+
+	err = h.svc.VerifyCode(user.ID, req.Code)
+    if err != nil {
+    return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
+        "message": err.Error(),
+    })
 }
 
+	return ctx.Status(http.StatusOK).JSON(fiber.Map{
+		"message": "code verified",
+	})
+}
 func (h *UserHandler) GetVerificationCode(ctx fiber.Ctx) error {
+
+	// get logged-in user
+	user, err := h.svc.Auth.GetCurrentUser(ctx)
+	if err != nil {
+		return ctx.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"message": "user not found in context",
+		})
+	}
+
+	// generate verification code
+	code, err := h.svc.GetVerificationCode(user)
+	if err != nil {
+		return ctx.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Unable to generate verification code",
+			"error":   err.Error(),
+		})
+	}
+
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message": "Verification code sent",
+		"data":    code, // sent via SMS/email
 	})
 }
 
