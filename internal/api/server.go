@@ -36,11 +36,16 @@ func StartServer(config config.AppConfig) {
 		App: app,
 		DB: db,
 		Auth: auth,
+		Config: config,
 	}
 
 	setupRoutes(rh)
 
-	app.Listen(":" + config.ServerPort)
+	log.Println("Listening on port", config.ServerPort)
+
+    if err := app.Listen(":" + config.ServerPort); err != nil {
+	log.Fatalf("Server failed to start: %v", err)
+   }
 }
 
 
