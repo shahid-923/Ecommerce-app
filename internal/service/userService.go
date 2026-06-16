@@ -5,15 +5,22 @@ import (
 	"ecommerce-app/internal/dto"
 	"ecommerce-app/internal/helper"
 	"ecommerce-app/internal/repository"
+
+	"ecommerce-app/pkg/notification"
+	"ecommerce-app/config"
 	"errors"
+	"fmt"
+	"time"
 )
 
 type UserService struct {
 	Repo repository.UserRepository
 	Auth helper.Auth
+	Config config.AppConfig
+
 }
 
-func (s *UserService) Signup(input dto.UserSignup) (domain.User, string, error) {
+func (s *UserService) Register(input dto.UserSignup) (domain.User, string, error) {
 	hashedPassword, err := s.Auth.CreateHashedPassword(input.Password)
 	if err != nil {
 		return domain.User{}, "", err
@@ -58,12 +65,93 @@ func (s *UserService) GetUserByID(id uint) (domain.User, error) {
 	return s.Repo.FindUserByID(id)
 }
 
-func (s *UserService) GetVerificationCode(e domain.User) (int, error) {
-	return 0, nil
+func (s *UserService) isVerifiedUser(id uint) (bool) {
+
+	currentUser, err := s.Repo.FindUserByID(id)
+	return err == nil && currentUser.Verified     // if true else return false
+    
+}
+func (s *UserService) GetVerificationCode(e domain.User) (error) {
+	
+	// if user already verified
+	if s.isVerifiedUser(e.ID) {
+    return errors.New("user already verified")
+    }
+
+	// generate verification code 
+    code, err := s.Auth.GenerateCode()
+	if err != nil{
+		return  err
+	}
+
+	// update user 
+	user := domain.User{
+	  Expiry: time.Now().Add(30 * time.Minute),	
+	  Code: code,
+	}
+    
+	_, err = s.Repo.UpdateUser(e.ID, user)
+
+	if err != nil {
+		return errors.New("failed to update user")
+	}
+    user, _ = s.Repo.FindUserByID(e.ID) // get the updated user with code and expiry time
+
+
+	// send the email to user email
+	notificationClient := notification.NewNotificationClient(s.Config)
+	message := fmt.Sprintf(
+	`Hello,
+    Your verification code is %d.
+    This code expires in 30 minutes.
+
+    Regards,
+    MYCOM Team`,
+	code,
+   )
+
+	err = notificationClient.SendEmail(
+		user.Email,
+		"Email Verification",
+		message,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	// return the verification code
+	return nil
 }
 
-func (s *UserService) VerifyCode(id uint, code int) (string, error) {
-	return "", nil
+func (s *UserService) VerifyCode(id uint, code int) error {
+	if s.isVerifiedUser(id) {
+		return errors.New("user already verified")
+	}
+
+	user, err := s.Repo.FindUserByID(id)
+	if err != nil {
+		return err
+	}
+
+	if user.Code != code {
+		return errors.New("invalid verification code")
+	}
+
+	if !time.Now().Before(user.Expiry) {
+		return errors.New("verification code expired")
+	}
+
+	updatedUser := domain.User{
+		Verified: true,
+	}
+
+	_, err = s.Repo.UpdateUser(id, updatedUser)
+	if err != nil {
+		return errors.New("unable to update user")
+	}
+
+	return nil
 }
 
 func (s *UserService) CreateProfile(id uint, input any) error {

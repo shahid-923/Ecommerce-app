@@ -3,41 +3,78 @@ package config
 import (
 	"errors"
 	"os"
-	"log"
+    "log"
 	"github.com/joho/godotenv"
 )
 
 type AppConfig struct {
 	ServerPort string
-	Dsn 	  string
-	AppSecret string
+	Dsn        string
+	AppSecret  string
+
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
 }
 
 func SetupEnvironment() (AppConfig, error) {
 
-	// Load .env first
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Println("Warning: .env not loaded")
 	}
-	// Now env variables are available
+
 	httpPort := os.Getenv("HTTP_PORT")
 	if httpPort == "" {
 		return AppConfig{}, errors.New("HTTP_PORT not set")
 	}
-    // Load DSN from env Data Source Name is a string that tells how to connect to db
-	Dsn := os.Getenv("DSN")
-	if len(Dsn) == 0 {
+
+	dsn := os.Getenv("DSN")
+	if dsn == "" {
 		return AppConfig{}, errors.New("DSN not set")
 	}
 
-	appSecret := os.Getenv("APP_SECRET") 
-	if len(appSecret) < 1 {
-		return AppConfig{}, errors.New("Appsecret not defined")
+	appSecret := os.Getenv("APP_SECRET")
+	if appSecret == "" {
+		return AppConfig{}, errors.New("APP_SECRET not set")
 	}
+
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+	smtpUser := os.Getenv("SMTP_USER")
+	smtpPassword := os.Getenv("SMTP_PASSWORD")
+	smtpFrom := os.Getenv("SMTP_FROM")
+
+	if smtpHost == "" {
+		return AppConfig{}, errors.New("SMTP_HOST not set")
+	}
+
+	if smtpPort == "" {
+		return AppConfig{}, errors.New("SMTP_PORT not set")
+	}
+
+	if smtpUser == "" {
+		return AppConfig{}, errors.New("SMTP_USER not set")
+	}
+
+	if smtpPassword == "" {
+		return AppConfig{}, errors.New("SMTP_PASSWORD not set")
+	}
+
+	if smtpFrom == "" {
+		return AppConfig{}, errors.New("SMTP_FROM not set")
+	}
+
 	return AppConfig{
-		ServerPort: httpPort,
-		Dsn:        Dsn,
-		AppSecret: appSecret,
+		ServerPort:   httpPort,
+		Dsn:          dsn,
+		AppSecret:    appSecret,
+		SMTPHost:     smtpHost,
+		SMTPPort:     smtpPort,
+		SMTPUser:     smtpUser,
+		SMTPPassword: smtpPassword,
+		SMTPFrom:     smtpFrom,
 	}, nil
 }
