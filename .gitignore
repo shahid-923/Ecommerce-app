@@ -3,12 +3,14 @@
 *.out
 *.test
 
-
 # Temporary folders
 /tmp/
 
-# Dependencies 
+# Dependencies
 /vendor/
 
 # OS files
 .DS_Store
+
+# Environment variables
+.env
