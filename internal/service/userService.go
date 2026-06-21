@@ -6,18 +6,17 @@ import (
 	"ecommerce-app/internal/helper"
 	"ecommerce-app/internal/repository"
 
-	"ecommerce-app/pkg/notification"
 	"ecommerce-app/config"
+	"ecommerce-app/pkg/notification"
 	"errors"
 	"fmt"
 	"time"
 )
 
 type UserService struct {
-	Repo repository.UserRepository
-	Auth helper.Auth
+	Repo   repository.UserRepository
+	Auth   helper.Auth
 	Config config.AppConfig
-
 }
 
 func (s *UserService) Register(input dto.UserSignup) (domain.User, string, error) {
@@ -65,50 +64,49 @@ func (s *UserService) GetUserByID(id uint) (domain.User, error) {
 	return s.Repo.FindUserByID(id)
 }
 
-func (s *UserService) isVerifiedUser(id uint) (bool) {
+func (s *UserService) isVerifiedUser(id uint) bool {
 
 	currentUser, err := s.Repo.FindUserByID(id)
-	return err == nil && currentUser.Verified     // if true else return false
-    
+	return err == nil && currentUser.Verified // if true else return false
+
 }
-func (s *UserService) GetVerificationCode(e domain.User) (error) {
-	
+func (s *UserService) GetVerificationCode(e domain.User) error {
+
 	// if user already verified
 	if s.isVerifiedUser(e.ID) {
-    return errors.New("user already verified")
-    }
-
-	// generate verification code 
-    code, err := s.Auth.GenerateCode()
-	if err != nil{
-		return  err
+		return errors.New("user already verified")
 	}
 
-	// update user 
+	// generate verification code
+	code, err := s.Auth.GenerateCode()
+	if err != nil {
+		return err
+	}
+
+	// update user
 	user := domain.User{
-	  Expiry: time.Now().Add(30 * time.Minute),	
-	  Code: code,
+		Expiry: time.Now().Add(30 * time.Minute),
+		Code:   code,
 	}
-    
+
 	_, err = s.Repo.UpdateUser(e.ID, user)
 
 	if err != nil {
 		return errors.New("failed to update user")
 	}
-    user, _ = s.Repo.FindUserByID(e.ID) // get the updated user with code and expiry time
-
+	user, _ = s.Repo.FindUserByID(e.ID) // get the updated user with code and expiry time
 
 	// send the email to user email
 	notificationClient := notification.NewNotificationClient(s.Config)
 	message := fmt.Sprintf(
-	`Hello,
+		`Hello,
     Your verification code is %d.
     This code expires in 30 minutes.
 
     Regards,
     MYCOM Team`,
-	code,
-   )
+		code,
+	)
 
 	err = notificationClient.SendEmail(
 		user.Email,
@@ -162,8 +160,40 @@ func (s *UserService) UpdateProfile(id uint, input any) error {
 	return nil
 }
 
-func (s *UserService) BecomeSeller(id uint, input any) (string, error) {
-	return "", nil
+func (s *UserService) BecomeSeller(id uint, input dto.SellerInput) (string, error) {
+
+	// find existing user
+	user, _ := s.Repo.FindUserByID(id)
+
+	if user.UserType == domain.SELLER {
+		return "", errors.New("you have already joined the seller program")
+	}
+
+	//update existing user
+	seller, err := s.Repo.UpdateUser(id, domain.User{
+		FirstName: input.FirstName,
+		LastName:  input.LastName,
+		Phone:     input.Phone,
+		UserType:  domain.SELLER,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	//generate token with new user type
+	token, err := s.Auth.GenerateToken(user.ID, user.Email, seller.UserType)
+
+	// create bank account info for the seller
+
+	err = s.Repo.CreateBankAccount(domain.BankAccount{
+		BankAccountNumber: input.BankAccountNumber,
+		SwiftCode:         input.SwiftCode,
+		PaymentType:       input.PaymentType,
+		UserID:            id,
+   })
+   
+	return token, err
 }
 
 func (s *UserService) FindCart(id uint) ([]interface{}, error) {

@@ -9,18 +9,29 @@ import (
 )
 
 type UserRepository interface {
+
 	CreateUser(user domain.User) (domain.User, error)
 	FindUser(email string) (domain.User, error)
 	FindUserByID(id uint) (domain.User, error)
 	UpdateUser(id uint, user domain.User) (domain.User, error)
+	CreateBankAccount(e domain.BankAccount) error
 }
 
 type userRepository struct {
 	db *gorm.DB
 }
 
+// ================= CREATE BANK ACCOUNT =================
+func (r *userRepository) CreateBankAccount(e domain.BankAccount) error {
+    return r.db.Create(&e).Error	
+}
+
+
+// ================= NEW USER REPOSITORY =================
 func NewUserRepository(db *gorm.DB) UserRepository {
-	return &userRepository{db: db}
+	return &userRepository{
+		db: db,
+	}
 }
 
 // ================= CREATE USER =================
@@ -63,18 +74,18 @@ func (r *userRepository) FindUserByID(id uint) (domain.User, error) {
 
 // ================= UPDATE USER =================
 
-func (r *userRepository) UpdateUser(id uint, user domain.User) (domain.User, error) {
-	var updated domain.User
+func (r *userRepository) UpdateUser(id uint, u domain.User) (domain.User, error) {
+	var user domain.User
 
 	err := r.db.Model(&domain.User{}).
 		Where("id = ?", id).
-		Updates(user).
-		First(&updated).Error
+		Updates(u).
+		First(&user).Error
 
 	if err != nil {
 		log.Printf("error updating user: %v\n", err)
 		return domain.User{}, errors.New("failed to update user")
 	}
 
-	return updated, nil
+	return user, nil
 }

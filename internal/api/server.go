@@ -18,7 +18,7 @@ func StartServer(config config.AppConfig) {
 	log.Printf("Starting server")
 
 	app := fiber.New()
-	db, err := gorm.Open(postgres.Open(config.Dsn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(config.Dsn), &gorm.Config{})  //db is the gateway for doing database operations
 
 
 	if err != nil {
@@ -27,8 +27,12 @@ func StartServer(config config.AppConfig) {
     
 	log.Println("Database connected successfully")
 	
-	//run the migration
-	db.AutoMigrate(&domain.User{})
+	//run migration
+	err = db.AutoMigrate(&domain.User{}, &domain.BankAccount{})
+	if err != nil {
+		log.Fatalf("Database migration error: %v\n", err)
+	}
+    log.Println("migration was successfull")
 
 	auth := helper.SetupAuth(config.AppSecret)
 
