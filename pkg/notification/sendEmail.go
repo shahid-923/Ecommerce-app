@@ -1,7 +1,10 @@
 package notification
 
 import (
-	"net/smtp"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
 
 	"ecommerce-app/config"
 )
@@ -20,33 +23,71 @@ func NewNotificationClient(cfg config.AppConfig) NotificationClient {
 	}
 }
 
+type sender struct {
+	Email string `json:"email"`
+}
+
+type receiver struct {
+	Email string `json:"email"`
+}
+
+type emailRequest struct {
+	Sender      sender     `json:"sender"`
+	To          []receiver `json:"to"`
+	Subject     string     `json:"subject"`
+	HtmlContent string     `json:"htmlContent"`
+}
+
 func (c *notificationClient) SendEmail(
 	email string,
 	subject string,
 	message string,
 ) error {
 
-	msg := []byte(
-		"From: " + c.config.SMTPFrom + "\r\n" +
-			"To: " + email + "\r\n" +
-			"Subject: " + subject + "\r\n" +
-			"MIME-Version: 1.0\r\n" +
-			"Content-Type: text/plain; charset=UTF-8\r\n\r\n" +
-			message,
+	reqBody := emailRequest{
+		Sender: sender{
+			Email: c.config.EmailFrom,
+		},
+		To: []receiver{
+			{
+				Email: email,
+			},
+		},
+		Subject:     subject,
+		HtmlContent: fmt.Sprintf("<pre>%s</pre>", message),
+	}
+
+	body, err := json.Marshal(reqBody)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://api.brevo.com/v3/smtp/email",
+		bytes.NewBuffer(body),
 	)
 
-	auth := smtp.PlainAuth(
-		"",
-		c.config.SMTPUser,
-		c.config.SMTPPassword,
-		c.config.SMTPHost,
-	)
+	if err != nil {
+		return err
+	}
 
-	return smtp.SendMail(
-		c.config.SMTPHost+":"+c.config.SMTPPort,
-		auth,
-		c.config.SMTPFrom,
-		[]string{email},
-		msg,
-	)
+	req.Header.Set("accept", "application/json")
+	req.Header.Set("content-type", "application/json")
+	req.Header.Set("api-key", c.config.BrevoAPIKey)
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("failed to send email: %s", resp.Status)
+	}
+
+	return nil
 }
