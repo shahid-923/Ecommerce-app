@@ -7,9 +7,9 @@ import (
 	"gorm.io/gorm"
 )
 
-type RestHandler struct {
+type RestHandler struct {      //holds all the dependencies your HTTP request handlers
 	App *fiber.App
 	DB *gorm.DB
 	Auth helper.Auth
 	Config config.AppConfig
-}
+}  
