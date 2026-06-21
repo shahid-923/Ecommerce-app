@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"ecommerce-app/config"
@@ -67,7 +68,6 @@ func (c *notificationClient) SendEmail(
 		"https://api.brevo.com/v3/smtp/email",
 		bytes.NewBuffer(body),
 	)
-
 	if err != nil {
 		return err
 	}
@@ -85,8 +85,14 @@ func (c *notificationClient) SendEmail(
 
 	defer resp.Body.Close()
 
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("failed to send email: %s", resp.Status)
+		return fmt.Errorf(
+			"failed to send email: %s, response=%s",
+			resp.Status,
+			string(bodyBytes),
+		)
 	}
 
 	return nil
