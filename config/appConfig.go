@@ -2,21 +2,19 @@ package config
 
 import (
 	"errors"
+	"log"
 	"os"
-    "log"
+
 	"github.com/joho/godotenv"
 )
 
 type AppConfig struct {
 	ServerPort string
-	Dsn        string
-	AppSecret  string
+	Dsn         string
+	AppSecret   string
 
-	SMTPHost     string
-	SMTPPort     string
-	SMTPUser     string
-	SMTPPassword string
-	SMTPFrom     string
+	BrevoAPIKey string
+	EmailFrom   string
 }
 
 func SetupEnvironment() (AppConfig, error) {
@@ -41,40 +39,21 @@ func SetupEnvironment() (AppConfig, error) {
 		return AppConfig{}, errors.New("APP_SECRET not set")
 	}
 
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
-	smtpUser := os.Getenv("SMTP_USER")
-	smtpPassword := os.Getenv("SMTP_PASSWORD")
-	smtpFrom := os.Getenv("SMTP_FROM")
-
-	if smtpHost == "" {
-		return AppConfig{}, errors.New("SMTP_HOST not set")
+	brevoAPIKey := os.Getenv("BREVO_API_KEY")
+	if brevoAPIKey == "" {
+		return AppConfig{}, errors.New("BREVO_API_KEY not set")
 	}
 
-	if smtpPort == "" {
-		return AppConfig{}, errors.New("SMTP_PORT not set")
-	}
-
-	if smtpUser == "" {
-		return AppConfig{}, errors.New("SMTP_USER not set")
-	}
-
-	if smtpPassword == "" {
-		return AppConfig{}, errors.New("SMTP_PASSWORD not set")
-	}
-
-	if smtpFrom == "" {
-		return AppConfig{}, errors.New("SMTP_FROM not set")
+	emailFrom := os.Getenv("EMAIL_FROM")
+	if emailFrom == "" {
+		return AppConfig{}, errors.New("EMAIL_FROM not set")
 	}
 
 	return AppConfig{
-		ServerPort:   httpPort,
-		Dsn:          dsn,
-		AppSecret:    appSecret,
-		SMTPHost:     smtpHost,
-		SMTPPort:     smtpPort,
-		SMTPUser:     smtpUser,
-		SMTPPassword: smtpPassword,
-		SMTPFrom:     smtpFrom,
+		ServerPort:  httpPort,
+		Dsn:         dsn,
+		AppSecret:   appSecret,
+		BrevoAPIKey: brevoAPIKey,
+		EmailFrom:   emailFrom,
 	}, nil
 }
