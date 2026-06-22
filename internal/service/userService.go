@@ -105,7 +105,7 @@ func (s *UserService) GetVerificationCode(e domain.User) error {
 
 		Regards,
 		MYCOM Team`,
-	code,
+	    code,
 	)
 
 	err = notificationClient.SendEmail(
