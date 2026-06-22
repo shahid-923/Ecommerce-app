@@ -99,13 +99,13 @@ func (s *UserService) GetVerificationCode(e domain.User) error {
 	// send the email to user email
 	notificationClient := notification.NewNotificationClient(s.Config)
 	message := fmt.Sprintf(
-		`Hello,
-		 Your verification code is %d.
-		 This code expires in 30 minutes.
+	   `Hello,
+		Your verification code is %d.
+		This code expires in 30 minutes.
 
 		Regards,
 		MYCOM Team`,
-		code,
+	code,
 	)
 
 	err = notificationClient.SendEmail(
