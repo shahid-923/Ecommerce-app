@@ -100,11 +100,11 @@ func (s *UserService) GetVerificationCode(e domain.User) error {
 	notificationClient := notification.NewNotificationClient(s.Config)
 	message := fmt.Sprintf(
 		`Hello,
-    Your verification code is %d.
-    This code expires in 30 minutes.
+		Your verification code is %d.
+		This code expires in 30 minutes.
 
-    Regards,
-    MYCOM Team`,
+		Regards,
+		MYCOM Team`,
 		code,
 	)
 
@@ -191,8 +191,8 @@ func (s *UserService) BecomeSeller(id uint, input dto.SellerInput) (string, erro
 		SwiftCode:         input.SwiftCode,
 		PaymentType:       input.PaymentType,
 		UserID:            id,
-   })
-   
+	})
+
 	return token, err
 }
 
