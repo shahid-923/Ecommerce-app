@@ -98,12 +98,11 @@ func (s *UserService) GetVerificationCode(e domain.User) error {
 
 	// send the email to user email
 	notificationClient := notification.NewNotificationClient(s.Config)
-	
+
 	message := fmt.Sprintf(
 	"Hello,\n\n"+
 		"Thank you for registering with MYCOM.\n\n"+
-		"Your email verification code is:\n\n"+
-		"%d\n\n"+
+		"Your email verification code is: %d\n\n"+
 		"This code is valid for the next 30 minutes.\n\n"+
 		"If you did not request this verification, you can safely ignore this email.\n\n"+
 		"Regards,\n"+
