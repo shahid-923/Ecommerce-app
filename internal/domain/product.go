@@ -9,7 +9,7 @@ type Product struct {
 	CategoryId   uint         `json:"category_id"`
 	ImageUrl     string       `json:"image_url"`
 	Price        float64      `json:"price"` 
-	UserId       int          `json:"user_id"`
+	UserId       int          `json:"user_id"`    // belongs to seller
 	Stock        uint         `json:"stock"`
 	CreatedAt    time.Time    `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt    time.Time    `json:"updated_at" gorm:"autoUpdateTime"`
