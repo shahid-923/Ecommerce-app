@@ -10,8 +10,8 @@ import (
 	"ecommerce-app/config"
 )
 
-type CatalogueService struct {
-	Repo   repository.CatalogueRepository
+type CatalogueService struct {  
+	Repo   repository.CatalogueRepository 
 	Auth   helper.Auth
 	Config config.AppConfig
 }
