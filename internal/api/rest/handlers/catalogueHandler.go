@@ -94,7 +94,7 @@ func (h *CatalogueHandler) GetCategoryById(ctx fiber.Ctx) error {
 	return rest.SuccessResponse(ctx, "category fetched successfully", cat)
 }
 
-
+ 
 func (h *CatalogueHandler) EditCategory(ctx fiber.Ctx) error {
 	
 	req := dto.CreateCategoryRequest{} 
