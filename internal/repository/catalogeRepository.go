@@ -16,7 +16,6 @@ type CatalogueRepository interface {
 	EditCategory(c *domain.Category) (*domain.Category, error)
 	DeleteCategory(id int) error
 }
-
 type catalogueRepository struct {
 	db *gorm.DB
 }
@@ -57,7 +56,6 @@ func (c catalogueRepository) FindCategoryById(id int) (*domain.Category, error) 
 	var category domain.Category
 
 	err := c.db.First(&category, id).Error
-
 	if err != nil {
 		log.Printf("db_err: %v", err)
 		return nil, errors.New("category does not exist")

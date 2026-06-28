@@ -18,6 +18,12 @@ func InternalError(ctx fiber.Ctx, err error) error {
 	})
 }
 
+func BadRequestError(ctx fiber.Ctx, msg string) error {
+	return ctx.Status(http.StatusBadRequest).JSON(fiber.Map{
+		"message": msg,
+	})
+}
+
 func SuccessResponse(ctx fiber.Ctx, msg string, data interface{}) error {
 	return ctx.Status(http.StatusOK).JSON(fiber.Map{
 		"message": msg,
